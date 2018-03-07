@@ -37,19 +37,19 @@ def validateFilename(filename):
 
 def validateURL(url):
     try:
-        r = urllib2.urlopen(url)
+        r = requests.get(url)
         count = 1
-        while r.getcode() == 500 and count < 4:
+        while r.status_code == 500 and count < 4:
             print ("Attempt {0} - Status code: {1}. Retrying.".format(count, r.status_code))
             count += 1
-            r = urllib2.urlopen(url)
+            r = requests.get(url)
         sourceFilename = r.headers.get('Content-Disposition')
         ext = ''
         if sourceFilename:
             ext = os.path.splitext(sourceFilename)[1].replace('"', '').replace(';', '').replace(' ', '')
         if not ext:
             ext = os.path.splitext(url)[1]
-        validURL = r.getcode() == 200
+        validURL = r.status_code == 200
         validFiletype = ext.lower() in ['.csv', '.xls', '.xlsx']
         return validURL, validFiletype
     except:
@@ -83,27 +83,27 @@ def convert_mth_strings ( mth_string ):
 #### VARIABLES 1.0
 
 entity_id = "E4704_LCC_gov"
-url = "http://leedsdatamill.org/dataset/council-spending"
+url = "https://datamillnorth.org/dataset/council-spending"
 errors = 0
 data = []
 
 #### READ HTML 1.2
 import requests   #  import requests to avoid http errors
 
-html = requests.get(url, verify=False)
+html = requests.get(url)
 soup = BeautifulSoup(html.text, 'lxml')
 
 #### SCRAPE DATA
 
-block = soup.find('ul', attrs = {'class':'unstyled resource-list'})
-links = block.find_all('div', 'btn-group-vertical')
+block = soup.find('div', attrs = {'class':'el-collapse resourceCollapse'})
+links = block.find_all('div', 'el-collapse-item__header')
 
 for link in links:
-    if '.csv' in link.a.find_next('a')['href']:
-        csvfile = link.a.find_next('a')['title']
-        linkfile = link.a.find_next('a')['href']
-        csvMth = csvfile.split(' ')[-2].strip()[:3]
-        csvYr = csvfile.split(' ')[-1].strip()
+    if '.csv' in link.find('a')['href']:
+        csvfile = link.find('div', 'title-box').find('strong').text
+        linkfile = link.find('a')['href']
+        csvMth = csvfile.split()[-2].strip()[:3]
+        csvYr = csvfile.split()[-1].strip()
         csvMth = convert_mth_strings(csvMth.upper())
         data.append([csvYr, csvMth, linkfile])
 
